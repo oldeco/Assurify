@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Assurify — Parametric Insurance Infrastructure for Autonomous Agents</title>
+<meta name="description" content="Institutional-grade parametric insurance protocol for autonomous AI agents. On-chain coverage for financial loss, per-transaction slippage, and data breach events. Settled in USDC on Solana."/>
+<meta property="og:title" content="Assurify — Parametric Insurance Infrastructure for Autonomous Agents"/>
+<meta property="og:description" content="Institutional-grade parametric coverage for autonomous agents. Oracle-verified, USDC-denominated, settled in under one minute."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  /* Core palette — deep institutional navy with disciplined accents */
+  --bg:#05070d;
+  --bg-1:#080b15;
+  --bg-2:#0c1020;
+  --bg-3:#11162a;
+  --ink:#F5F7FB;
+  --ink-dim:#A8B2CC;
+  --ink-muted:#5E6B8A;
+  --ink-faint:#3B4566;
+  --line:rgba(120,140,180,.08);
+  --line-2:rgba(120,140,180,.14);
+  --line-3:rgba(120,140,180,.22);
+  /* Signal colors — used sparingly */
+  --accent:#14F195;      /* Solana green — the one hero accent */
+  --accent-dim:#0FB573;
+  --sol:#9945FF;
+  --blue:#6CA9F0;
+  --amber:#F0B050;
+  --red:#E97070;
+  /* Typography */
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --serif:'Fraunces',Georgia,serif;
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  /* Radii & layout */
+  --r-sm:3px;--r-md:6px;--r-lg:10px;
+  --maxw:1320px;
+  --pad:clamp(20px,4vw,56px);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:400;overflow-x:hidden;cursor:none;line-height:1.5;font-feature-settings:"ss01","cv01","cv11"}
+button,input,select,textarea{font-family:inherit;color:inherit}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+::selection{background:var(--accent);color:var(--bg)}
+
+/* ─────────────────────────────────────────────
+   CURSOR — minimal precision crosshair
+   ───────────────────────────────────────────── */
+#cur{position:fixed;width:4px;height:4px;background:var(--accent);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);mix-blend-mode:screen;transition:width .2s ease,height .2s ease,opacity .2s}
+#cur-r{position:fixed;width:28px;height:28px;border:1px solid rgba(20,241,149,.28);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:all .22s cubic-bezier(.16,1,.3,1)}
+body.hov #cur{width:10px;height:10px}
+body.hov #cur-r{width:46px;height:46px;border-color:rgba(20,241,149,.55)}
+
+/* ─────────────────────────────────────────────
+   BACKGROUND LAYERS
+   ───────────────────────────────────────────── */
+#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
+.grid-bg{position:fixed;inset:0;z-index:1;pointer-events:none;background-image:
+  linear-gradient(to right,rgba(120,140,180,.025) 1px,transparent 1px),
+  linear-gradient(to bottom,rgba(120,140,180,.025) 1px,transparent 1px);
+  background-size:80px 80px;mask-image:radial-gradient(ellipse at 50% 30%,black 20%,transparent 90%);-webkit-mask-image:radial-gradient(ellipse at 50% 30%,black 20%,transparent 90%)}
+.vign{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 40%,transparent 25%,rgba(5,7,13,.85) 100%);z-index:1;pointer-events:none}
+.noise{position:fixed;inset:0;opacity:.018;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none;z-index:2;mix-blend-mode:overlay}
+
+/* ─────────────────────────────────────────────
+   UTILITIES
+   ───────────────────────────────────────────── */
+.container{max-width:var(--maxw);margin:0 auto;padding:0 var(--pad);position:relative;z-index:3}
+.eyebrow{font-family:var(--mono);font-size:10.5px;color:var(--accent);letter-spacing:.22em;text-transform:uppercase;font-weight:500;display:inline-flex;align-items:center;gap:10px}
+.eyebrow::before{content:'';display:inline-block;width:20px;height:1px;background:var(--accent)}
+.serif{font-family:var(--serif);font-weight:400;font-style:italic;letter-spacing:-.01em}
+.mono{font-family:var(--mono)}
+
+/* ─────────────────────────────────────────────
+   NAV
+   ───────────────────────────────────────────── */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;padding:14px var(--pad);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);background:rgba(5,7,13,.72);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);transition:border-color .3s,background .3s}
+nav.scrolled{border-color:var(--line-2);background:rgba(5,7,13,.88)}
+.logo{display:flex;align-items:center;gap:11px;cursor:none}
+.logo img{width:30px;height:30px;object-fit:contain;border-radius:6px;mix-blend-mode:screen;filter:drop-shadow(0 0 8px rgba(20,241,149,.35))}
+.logo-wrap{display:flex;flex-direction:column;line-height:1}
+.logo-name{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
+.logo-tag{font-family:var(--mono);font-size:8.5px;color:var(--ink-muted);letter-spacing:.18em;text-transform:uppercase;margin-top:3px}
+.nav-links{display:flex;gap:28px;list-style:none}
+.nav-links a{font-family:var(--mono);font-size:11.5px;color:var(--ink-dim);letter-spacing:.04em;transition:color .2s;cursor:none;font-weight:400;position:relative;padding:4px 0}
+.nav-links a:hover{color:var(--accent)}
+.nav-links a::after{content:'';position:absolute;bottom:-2px;left:0;width:0;height:1px;background:var(--accent);transition:width .25s ease}
+.nav-links a:hover::after{width:100%}
+.nav-r{display:flex;gap:10px;align-items:center}
+.btn-ghost{font-family:var(--mono);font-size:11px;padding:9px 18px;background:transparent;border:1px solid var(--line-3);color:var(--ink-dim);border-radius:var(--r-sm);cursor:none;letter-spacing:.06em;transition:all .2s;font-weight:500}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);background:rgba(20,241,149,.04)}
+.btn-solid{font-family:var(--mono);font-size:11px;padding:9px 18px;background:var(--accent);color:var(--bg);border:1px solid var(--accent);border-radius:var(--r-sm);cursor:none;letter-spacing:.06em;font-weight:600;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+.btn-solid:hover{background:var(--accent-dim);border-color:var(--accent-dim);transform:translateY(-1px);box-shadow:0 8px 24px -8px rgba(20,241,149,.4)}
+.hamburger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:6px}
+.hamburger span{display:block;width:20px;height:1.5px;background:var(--ink-dim);border-radius:2px;transition:all .3s}
+.hamburger.open span:nth-child(1){transform:translateY(6.5px) rotate(45deg);background:var(--accent)}
+.hamburger.open span:nth-child(2){opacity:0}
+.hamburger.open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg);background:var(--accent)}
+
+/* Mobile menu */
+.mob-menu{position:fixed;inset:0;top:56px;background:rgba(5,7,13,.97);backdrop-filter:blur(24px);z-index:150;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:32px 24px;opacity:0;pointer-events:none;transition:opacity .3s}
+.mob-menu.open{opacity:1;pointer-events:all}
+.mob-menu ul{list-style:none;width:100%;margin-bottom:28px}
+.mob-menu ul li a{display:block;font-family:var(--mono);font-size:14px;letter-spacing:.08em;color:var(--ink-dim);padding:16px 0;border-bottom:1px solid var(--line);transition:color .2s}
+.mob-menu ul li a:hover{color:var(--accent)}
+.mob-menu-btns{display:flex;flex-direction:column;gap:10px;width:100%}
+.mob-menu-btns .btn-ghost,.mob-menu-btns .btn-solid{text-align:center;padding:13px}
+
+/* ─────────────────────────────────────────────
+   PROTOCOL STATE BAR — live-feeling metrics
+   ───────────────────────────────────────────── */
+.state-bar{position:relative;z-index:4;padding:10px 0;background:linear-gradient(90deg,rgba(8,11,21,.7),rgba(12,16,32,.5),rgba(8,11,21,.7));border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden;margin-top:61px;backdrop-filter:blur(8px)}
+.state-t{display:flex;gap:0;white-space:nowrap;animation:tick 68s linear infinite;will-change:transform}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.state-i{font-family:var(--mono);font-size:10.5px;color:var(--ink-muted);padding:0 22px;letter-spacing:.04em;flex-shrink:0;display:inline-flex;align-items:center;gap:10px}
+.state-i .k{color:var(--ink-dim);text-transform:uppercase;letter-spacing:.14em;font-size:9.5px;font-weight:500}
+.state-i .v{color:var(--ink);font-weight:500}
+.state-i .v.g{color:var(--accent)}
+.state-i .v.a{color:var(--amber)}
+.state-i .sep{width:3px;height:3px;background:var(--line-3);border-radius:50%}
+.state-i .pulse{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent);animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+
+/* ─────────────────────────────────────────────
+   HERO
+   ───────────────────────────────────────────── */
+.hero{position:relative;z-index:3;padding:clamp(80px,12vw,140px) var(--pad) clamp(60px,8vw,100px);text-align:left;max-width:var(--maxw);margin:0 auto}
+.hero-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:80px;align-items:start}
+.hero-main{display:flex;flex-direction:column;gap:36px}
+.hero-badge{display:inline-flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;color:var(--ink-dim);border:1px solid var(--line-2);padding:7px 14px;border-radius:99px;letter-spacing:.12em;text-transform:uppercase;font-weight:500;animation:fade-up .9s .1s both;width:fit-content;background:rgba(12,16,32,.5);backdrop-filter:blur(8px)}
+.hero-badge .dot{width:6px;height:6px;background:var(--accent);border-radius:50%;box-shadow:0 0 10px var(--accent);animation:pulse 1.8s ease-in-out infinite}
+.hero-badge .sep-dot{width:3px;height:3px;background:var(--ink-faint);border-radius:50%}
+@keyframes fade-up{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+h1{font-family:var(--serif);font-size:clamp(44px,6.8vw,88px);font-weight:400;line-height:.98;letter-spacing:-.035em;animation:fade-up 1s .2s both;font-feature-settings:"ss01"}
+h1 .l1{display:block;color:var(--ink)}
+h1 .l2{display:block;color:var(--ink);font-style:italic;font-weight:300}
+h1 .l3{display:block;font-weight:500;background:linear-gradient(100deg,var(--accent) 0%,var(--blue) 55%,var(--sol) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-lead{font-size:17px;color:var(--ink-dim);line-height:1.6;max-width:540px;font-weight:300;animation:fade-up 1s .35s both}
+.hero-lead strong{color:var(--ink);font-weight:500}
+.hero-ctas{display:flex;gap:12px;flex-wrap:wrap;animation:fade-up 1s .45s both}
+.cta-p{font-family:var(--mono);font-size:12px;padding:15px 30px;background:var(--accent);color:var(--bg);border:1px solid var(--accent);border-radius:var(--r-sm);cursor:none;letter-spacing:.06em;font-weight:600;transition:all .22s;display:inline-flex;align-items:center;gap:8px}
+.cta-p:hover{background:var(--accent-dim);border-color:var(--accent-dim);transform:translateY(-2px);box-shadow:0 12px 32px -10px rgba(20,241,149,.5)}
+.cta-p .arrow{transition:transform .22s}
+.cta-p:hover .arrow{transform:translateX(4px)}
+.cta-s{font-family:var(--mono);font-size:12px;padding:15px 28px;background:transparent;color:var(--ink);border:1px solid var(--line-3);border-radius:var(--r-sm);cursor:none;letter-spacing:.06em;transition:all .22s}
+.cta-s:hover{border-color:var(--ink-dim);color:#fff;background:rgba(255,255,255,.02)}
+
+/* Hero right column — protocol card */
+.hero-card{background:linear-gradient(160deg,rgba(12,16,32,.72),rgba(8,11,21,.5));border:1px solid var(--line-2);border-radius:var(--r-md);padding:0;overflow:hidden;animation:fade-up 1s .55s both;backdrop-filter:blur(12px);box-shadow:0 30px 80px -30px rgba(0,0,0,.6)}
+.hero-card-head{padding:14px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:rgba(8,11,21,.4)}
+.hc-title{font-family:var(--mono);font-size:10.5px;color:var(--ink-dim);letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.hc-live{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9.5px;color:var(--accent);letter-spacing:.12em;text-transform:uppercase}
+.hc-live .pulse{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 1.8s ease-in-out infinite;box-shadow:0 0 8px var(--accent)}
+.hc-body{padding:24px 20px;display:flex;flex-direction:column;gap:18px}
+.hc-row{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:16px;padding-bottom:14px;border-bottom:1px dashed var(--line-2)}
+.hc-row:last-child{border-bottom:none;padding-bottom:0}
+.hc-label{font-family:var(--mono);font-size:10.5px;color:var(--ink-muted);letter-spacing:.1em;text-transform:uppercase}
+.hc-val{font-family:var(--mono);font-size:15px;color:var(--ink);font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
+.hc-val .u{color:var(--ink-muted);font-size:11px;margin-left:4px;font-weight:400}
+.hc-val .g{color:var(--accent)}
+.hc-bar{height:4px;background:rgba(120,140,180,.08);border-radius:99px;overflow:hidden;margin-top:6px}
+.hc-bar-f{height:100%;background:linear-gradient(90deg,var(--accent),var(--blue));border-radius:99px;transition:width 1.2s cubic-bezier(.16,1,.3,1)}
+
+/* ─────────────────────────────────────────────
+   LOGO / TRUST BAR
+   ───────────────────────────────────────────── */
+.trust-bar{position:relative;z-index:3;padding:44px var(--pad);border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:rgba(8,11,21,.4)}
+.trust-inner{max-width:var(--maxw);margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:32px;flex-wrap:wrap}
+.trust-label{font-family:var(--mono);font-size:10px;color:var(--ink-muted);letter-spacing:.2em;text-transform:uppercase;white-space:nowrap}
+.trust-logos{display:flex;gap:48px;align-items:center;flex-wrap:wrap;flex:1;justify-content:flex-end}
+.trust-item{font-family:var(--mono);font-size:13px;color:var(--ink-dim);letter-spacing:.01em;font-weight:500;display:inline-flex;align-items:center;gap:8px;opacity:.7;transition:opacity .2s}
+.trust-item:hover{opacity:1}
+.trust-item .mark{width:8px;height:8px;border-radius:2px;display:inline-block}
+
+/* ─────────────────────────────────────────────
+   PROBLEM BAND
+   ───────────────────────────────────────────── */
+.prob-band{position:relative;z-index:3;padding:clamp(72px,10vw,120px) var(--pad)}
+.prob-wrap{max-width:var(--maxw);margin:0 auto}
+.prob-head{display:grid;grid-template-columns:1fr 1.4fr;gap:60px;align-items:end;margin-bottom:56px}
+.prob-head-l .eyebrow{margin-bottom:20px}
+.prob-head-l h2{font-family:var(--serif);font-size:clamp(32px,4.5vw,56px);font-weight:400;letter-spacing:-.025em;line-height:1.02}
+.prob-head-l h2 em{font-style:italic;color:var(--accent);font-weight:400}
+.prob-head-r{font-size:15px;color:var(--ink-dim);line-height:1.65;font-weight:300;max-width:520px;justify-self:end}
+.prob-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line-2);border:1px solid var(--line-2);border-radius:var(--r-md);overflow:hidden}
+.pc{background:linear-gradient(180deg,rgba(12,16,32,.6),rgba(8,11,21,.4));padding:40px 36px;position:relative;transition:background .3s}
+.pc:hover{background:linear-gradient(180deg,rgba(14,20,40,.8),rgba(10,14,28,.5))}
+.pc-stat{font-family:var(--serif);font-size:clamp(44px,5.5vw,72px);font-weight:400;letter-spacing:-.04em;line-height:1;margin-bottom:16px;font-variant-numeric:tabular-nums}
+.pc-stat.r{color:var(--red)}.pc-stat.a{color:var(--amber)}.pc-stat.g{color:var(--accent)}
+.pc-stat .sign{font-size:.5em;vertical-align:super;margin-right:2px;opacity:.75}
+.pc-h{font-family:var(--sans);font-size:14px;color:var(--ink);font-weight:500;margin-bottom:10px;letter-spacing:-.005em}
+.pc-label{font-family:var(--sans);font-size:13px;color:var(--ink-dim);line-height:1.55;font-weight:300}
+.pc-src{font-family:var(--mono);font-size:9.5px;color:var(--ink-faint);letter-spacing:.1em;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+
+/* ─────────────────────────────────────────────
+   SECTION HEAD (reusable)
+   ───────────────────────────────────────────── */
+.sec{position:relative;z-index:3;padding:clamp(72px,10vw,130px) var(--pad);max-width:var(--maxw);margin:0 auto}
+.sec-full{position:relative;z-index:3;padding:clamp(72px,10vw,130px) 0;border-top:1px solid var(--line)}
+.sec-full .inn{max-width:var(--maxw);margin:0 auto;padding:0 var(--pad)}
+.sec-head{margin-bottom:56px}
+.sec-head .eyebrow{margin-bottom:20px}
+.sec-head h2{font-family:var(--serif);font-size:clamp(32px,4.8vw,60px);font-weight:400;letter-spacing:-.028em;line-height:1;margin-bottom:20px;max-width:880px}
+.sec-head h2 em{font-style:italic;font-weight:300}
+.sec-head h2 .hl{color:var(--accent);font-weight:500;font-style:normal}
+.sec-sub{font-size:16px;color:var(--ink-dim);line-height:1.6;max-width:620px;font-weight:300}
+
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .9s cubic-bezier(.16,1,.3,1),transform .9s cubic-bezier(.16,1,.3,1)}
+.reveal.in{opacity:1;transform:none}
+.reveal-stagger > *{opacity:0;transform:translateY(20px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)}
+.reveal-stagger.in > *{opacity:1;transform:none}
+.reveal-stagger.in > *:nth-child(1){transition-delay:0ms}
+.reveal-stagger.in > *:nth-child(2){transition-delay:90ms}
+.reveal-stagger.in > *:nth-child(3){transition-delay:180ms}
+.reveal-stagger.in > *:nth-child(4){transition-delay:270ms}
+
+/* ─────────────────────────────────────────────
+   PRODUCTS
+   ───────────────────────────────────────────── */
+.prod-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line-2);border:1px solid var(--line-2);border-radius:var(--r-md);overflow:hidden}
+.prod-card{background:linear-gradient(180deg,rgba(12,16,32,.75),rgba(8,11,21,.55));padding:36px 32px 32px;position:relative;display:flex;flex-direction:column;transition:all .35s;min-height:520px}
+.prod-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--gradient,linear-gradient(90deg,var(--accent),var(--blue)));opacity:.7;transition:opacity .3s}
+.prod-card:hover{background:linear-gradient(180deg,rgba(16,22,44,.9),rgba(10,14,28,.7))}
+.prod-card:hover::before{opacity:1}
+.prod-card[data-p="fin"]{--gradient:linear-gradient(90deg,var(--accent),var(--blue))}
+.prod-card[data-p="tra"]{--gradient:linear-gradient(90deg,var(--amber),#F6D860)}
+.prod-card[data-p="dat"]{--gradient:linear-gradient(90deg,var(--sol),#C084FC)}
+.pbadge{font-family:var(--mono);font-size:9.5px;padding:4px 10px;border-radius:99px;display:inline-flex;align-items:center;gap:6px;margin-bottom:22px;letter-spacing:.1em;text-transform:uppercase;font-weight:500;width:fit-content}
+.pbadge-g{background:rgba(20,241,149,.07);color:var(--accent);border:1px solid rgba(20,241,149,.22)}
+.pbadge-a{background:rgba(240,176,80,.07);color:var(--amber);border:1px solid rgba(240,176,80,.22)}
+.pbadge-p{background:rgba(153,69,255,.08);color:#C084FC;border:1px solid rgba(153,69,255,.22)}
+.prod-card h3{font-family:var(--serif);font-size:26px;font-weight:500;letter-spacing:-.02em;margin-bottom:4px;color:var(--ink)}
+.prod-subtitle{font-family:var(--mono);font-size:10.5px;color:var(--ink-muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:22px}
+.prod-limit-row{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
+.prod-limit{font-family:var(--serif);font-size:40px;font-weight:400;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.prod-limit-c{color:var(--accent)}.prod-limit-a{color:var(--amber)}.prod-limit-p{color:#C084FC}
+.prod-per{font-family:var(--mono);font-size:10.5px;color:var(--ink-muted);margin-bottom:22px;letter-spacing:.04em}
+.prod-desc{font-size:13.5px;color:var(--ink-dim);line-height:1.65;margin-bottom:24px;font-weight:300}
+.prod-feats{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:24px;flex:1}
+.prod-feats li{font-family:var(--sans);font-size:12.5px;color:var(--ink-dim);display:flex;gap:10px;line-height:1.45;font-weight:400}
+.prod-feats li .ic{flex-shrink:0;margin-top:3px;width:14px;height:14px;display:inline-flex;align-items:center;justify-content:center;border-radius:3px;font-size:9px;font-weight:700}
+.feat-g li .ic{background:rgba(20,241,149,.1);color:var(--accent)}
+.feat-a li .ic{background:rgba(240,176,80,.1);color:var(--amber)}
+.feat-p li .ic{background:rgba(153,69,255,.12);color:#C084FC}
+.prod-foot{padding-top:20px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.prod-price{font-family:var(--mono);font-size:12.5px;font-weight:600;letter-spacing:.02em}
+.prod-price .sm{color:var(--ink-muted);font-size:10.5px;font-weight:400;display:block;margin-top:2px;letter-spacing:.06em}
+.prod-cta{font-family:var(--mono);font-size:10.5px;color:var(--ink-dim);letter-spacing:.1em;text-transform:uppercase;transition:color .2s;display:inline-flex;align-items:center;gap:6px;cursor:none}
+.prod-cta:hover{color:var(--accent)}
+.prod-cta .a{transition:transform .2s}
+.prod-cta:hover .a{transform:translateX(3px)}
+
+/* ─────────────────────────────────────────────
+   ARCHITECTURE DIAGRAM / HOW IT WORKS
+   ───────────────────────────────────────────── */
+.arch-wrap{position:relative;margin-top:8px}
+.arch-flow{display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative;border:1px solid var(--line-2);border-radius:var(--r-md);overflow:hidden;background:linear-gradient(180deg,rgba(12,16,32,.4),rgba(8,11,21,.2))}
+.arch-step{padding:36px 28px;position:relative;border-right:1px solid var(--line-2);display:flex;flex-direction:column}
+.arch-step:last-child{border-right:none}
+.arch-step::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0;transition:opacity .4s}
+.arch-step:hover::before{opacity:.4}
+.arch-head{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.arch-n{font-family:var(--mono);font-size:10.5px;color:var(--accent);letter-spacing:.18em;font-weight:600;padding:4px 8px;border:1px solid rgba(20,241,149,.25);border-radius:var(--r-sm);background:rgba(20,241,149,.04)}
+.arch-dur{font-family:var(--mono);font-size:9.5px;color:var(--ink-faint);letter-spacing:.1em;text-transform:uppercase;margin-left:auto}
+.arch-title{font-family:var(--serif);font-size:20px;font-weight:500;letter-spacing:-.015em;margin-bottom:12px;line-height:1.15}
+.arch-desc{font-size:12.5px;color:var(--ink-dim);line-height:1.6;font-weight:300;margin-bottom:20px}
+.arch-meta{margin-top:auto;padding-top:16px;border-top:1px dashed var(--line-2);display:flex;flex-direction:column;gap:6px}
+.arch-meta-r{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px}
+.arch-meta-r .k{color:var(--ink-muted);letter-spacing:.08em;text-transform:uppercase}
+.arch-meta-r .v{color:var(--ink);font-weight:500}
+
+/* ─────────────────────────────────────────────
+   ORACLE / INFRASTRUCTURE
+   ───────────────────────────────────────────── */
+.infra-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:48px;align-items:start;margin-top:8px}
+.infra-left{display:flex;flex-direction:column;gap:28px}
+.infra-feat{padding:28px 30px;border:1px solid var(--line-2);border-radius:var(--r-md);background:linear-gradient(180deg,rgba(12,16,32,.5),rgba(8,11,21,.3));transition:border-color .3s,background .3s;position:relative;overflow:hidden}
+.infra-feat::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--accent);transform:scaleY(0);transform-origin:top;transition:transform .35s ease}
+.infra-feat:hover{border-color:var(--line-3);background:linear-gradient(180deg,rgba(14,20,40,.7),rgba(10,14,28,.4))}
+.infra-feat:hover::before{transform:scaleY(1)}
+.infra-feat-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.infra-icon{width:36px;height:36px;border-radius:var(--r-sm);background:rgba(20,241,149,.08);border:1px solid rgba(20,241,149,.2);display:flex;align-items:center;justify-content:center;color:var(--accent);flex-shrink:0}
+.infra-icon svg{width:18px;height:18px}
+.infra-feat h4{font-family:var(--serif);font-size:19px;font-weight:500;letter-spacing:-.015em}
+.infra-feat p{font-size:13.5px;color:var(--ink-dim);line-height:1.6;font-weight:300}
+
+.infra-right{position:sticky;top:100px;border:1px solid var(--line-2);border-radius:var(--r-md);background:linear-gradient(160deg,rgba(14,20,40,.7),rgba(8,11,21,.5));overflow:hidden}
+.infra-code-head{padding:12px 18px;border-bottom:1px solid var(--line-2);display:flex;align-items:center;justify-content:space-between;background:rgba(8,11,21,.5)}
+.infra-code-dots{display:flex;gap:6px}
+.infra-code-dots span{width:10px;height:10px;border-radius:50%;background:var(--line-3)}
+.infra-code-dots span:nth-child(1){background:#e97070}
+.infra-code-dots span:nth-child(2){background:#f0b050}
+.infra-code-dots span:nth-child(3){background:var(--accent)}
+.infra-code-title{font-family:var(--mono);font-size:10.5px;color:var(--ink-muted);letter-spacing:.1em;text-transform:uppercase}
+.infra-code{padding:22px 24px;font-family:var(--mono);font-size:12.5px;line-height:1.85;color:var(--ink-dim);overflow-x:auto;font-weight:400}
+.infra-code .c{color:var(--ink-faint)}
+.infra-code .k{color:#C084FC}
+.infra-code .s{color:var(--accent)}
+.infra-code .v{color:var(--amber)}
+.infra-code .n{color:var(--blue)}
+.infra-code .f{color:#EDB4FF}
+
+/* ─────────────────────────────────────────────
+   METRICS DASHBOARD / RESERVE
+   ───────────────────────────────────────────── */
+.metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line-2);border:1px solid var(--line-2);border-radius:var(--r-md);overflow:hidden;margin-top:8px}
+.metric{background:linear-gradient(180deg,rgba(12,16,32,.6),rgba(8,11,21,.4));padding:28px 26px;transition:background .3s}
+.metric:hover{background:linear-gradient(180deg,rgba(16,22,44,.85),rgba(10,14,28,.6))}
+.metric-label{font-family:var(--mono);font-size:10px;color:var(--ink-muted);letter-spacing:.14em;text-transform:uppercase;margin-bottom:14px;font-weight:500}
+.metric-val{font-family:var(--serif);font-size:clamp(30px,3.2vw,44px);font-weight:400;letter-spacing:-.035em;line-height:1;font-variant-numeric:tabular-nums;margin-bottom:8px}
+.metric-val.g{color:var(--accent)}
+.metric-delta{font-family:var(--mono);font-size:11px;color:var(--ink-dim);display:flex;align-items:center;gap:6px;font-weight:400}
+.metric-delta .up{color:var(--accent)}
+.metric-delta .down{color:var(--red)}
+.metric-spark{margin-top:14px;height:28px}
+.metric-spark svg{width:100%;height:100%}
+
+/* ─────────────────────────────────────────────
+   PRICING
+   ───────────────────────────────────────────── */
+.price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:8px}
+.price-c{background:linear-gradient(180deg,rgba(12,16,32,.65),rgba(8,11,21,.45));border:1px solid var(--line-2);border-radius:var(--r-md);padding:36px 32px;position:relative;display:flex;flex-direction:column;transition:all .3s}
+.price-c:hover{border-color:var(--line-3);transform:translateY(-3px)}
+.price-c.feat{background:linear-gradient(180deg,rgba(16,24,48,.85),rgba(10,14,28,.6));border-color:rgba(20,241,149,.3);box-shadow:0 0 40px -20px rgba(20,241,149,.25)}
+.price-c.feat:hover{border-color:rgba(20,241,149,.5);box-shadow:0 20px 60px -20px rgba(20,241,149,.35)}
+.p-tier{font-family:var(--mono);font-size:10.5px;color:var(--ink-muted);letter-spacing:.16em;text-transform:uppercase;margin-bottom:4px;font-weight:500}
+.p-tier-desc{font-size:12.5px;color:var(--ink-muted);margin-bottom:24px;font-weight:300;line-height:1.5}
+.p-amt-wrap{display:flex;align-items:baseline;gap:6px;margin-bottom:4px}
+.p-amt{font-family:var(--serif);font-size:clamp(40px,4.5vw,56px);font-weight:400;letter-spacing:-.035em;line-height:1;font-variant-numeric:tabular-nums}
+.p-amt.g{background:linear-gradient(120deg,var(--accent),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.p-amt.a{background:linear-gradient(120deg,var(--amber),#F6D860);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.p-amt.f{background:linear-gradient(120deg,var(--sol),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.p-unit{font-family:var(--mono);font-size:14px;color:var(--ink-muted);font-weight:400}
+.p-period{font-family:var(--mono);font-size:11px;color:var(--ink-muted);margin-bottom:28px;letter-spacing:.04em}
+.p-list{list-style:none;display:flex;flex-direction:column;gap:12px;margin-bottom:28px;flex:1}
+.p-list li{font-size:13px;color:var(--ink-dim);display:flex;gap:10px;align-items:flex-start;line-height:1.5;font-weight:400}
+.chk{color:var(--accent);flex-shrink:0;margin-top:3px;width:14px;height:14px}
+.pbtn{display:block;width:100%;padding:13px;font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-align:center;border-radius:var(--r-sm);cursor:none;transition:all .22s;font-weight:500}
+.pb-out{border:1px solid var(--line-3);color:var(--ink-dim);background:transparent}
+.pb-out:hover{border-color:var(--accent);color:var(--accent);background:rgba(20,241,149,.04)}
+.pb-fill{background:var(--accent);color:var(--bg);border:1px solid var(--accent);font-weight:600}
+.pb-fill:hover{background:var(--accent-dim);transform:translateY(-1px);box-shadow:0 12px 32px -10px rgba(20,241,149,.5)}
+.pop-flag{position:absolute;top:18px;right:18px;font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--accent);padding:4px 10px;border-radius:99px;background:rgba(20,241,149,.1);border:1px solid rgba(20,241,149,.3);text-transform:uppercase;font-weight:600}
+
+/* ─────────────────────────────────────────────
+   FAQ
+   ───────────────────────────────────────────── */
+.faq-grid{display:grid;grid-template-columns:1fr 1.6fr;gap:60px;align-items:start;margin-top:8px}
+.faq-side{position:sticky;top:100px}
+.faq-side .eyebrow{margin-bottom:20px}
+.faq-side h2{font-family:var(--serif);font-size:clamp(32px,4vw,52px);font-weight:400;letter-spacing:-.028em;line-height:1.02;margin-bottom:20px}
+.faq-side h2 em{font-style:italic;font-weight:300}
+.faq-side p{font-size:15px;color:var(--ink-dim);line-height:1.6;font-weight:300;max-width:360px;margin-bottom:28px}
+.faq-contact{font-family:var(--mono);font-size:11.5px;color:var(--accent);letter-spacing:.08em;display:inline-flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--accent)}
+
+.faq-list{display:flex;flex-direction:column;border-top:1px solid var(--line-2)}
+.faq-item{border-bottom:1px solid var(--line-2);transition:background .2s}
+.faq-item:hover{background:rgba(12,16,32,.3)}
+.faq-q{padding:26px 0;font-family:var(--serif);font-size:19px;font-weight:500;letter-spacing:-.015em;cursor:none;display:flex;justify-content:space-between;align-items:center;transition:color .2s;user-select:none;gap:20px;line-height:1.3}
+.faq-q:hover{color:var(--accent)}
+.faq-ic{font-family:var(--mono);font-size:14px;color:var(--ink-muted);transition:transform .3s,color .3s;flex-shrink:0;width:24px;height:24px;border:1px solid var(--line-2);border-radius:50%;display:inline-flex;align-items:center;justify-content:center}
+.faq-item.open .faq-ic{transform:rotate(45deg);color:var(--accent);border-color:var(--accent)}
+.faq-a{font-size:14px;color:var(--ink-dim);line-height:1.7;max-height:0;overflow:hidden;transition:max-height .5s cubic-bezier(.16,1,.3,1),padding .3s;font-weight:300}
+.faq-item.open .faq-a{max-height:400px;padding:0 0 28px}
+
+/* ─────────────────────────────────────────────
+   CTA BAND
+   ───────────────────────────────────────────── */
+.cta-band{position:relative;z-index:3;padding:clamp(80px,10vw,130px) var(--pad);text-align:center;border-top:1px solid var(--line);overflow:hidden}
+.cta-band::before{content:'';position:absolute;inset:0;background:
+  radial-gradient(ellipse 80% 50% at 50% 100%,rgba(20,241,149,.09) 0%,transparent 60%),
+  radial-gradient(ellipse 60% 40% at 30% 80%,rgba(153,69,255,.06) 0%,transparent 50%);
+  pointer-events:none}
+.cta-inner{max-width:820px;margin:0 auto;position:relative}
+.cta-band h2{font-family:var(--serif);font-size:clamp(40px,6vw,80px);font-weight:400;letter-spacing:-.032em;line-height:.98;margin-bottom:24px}
+.cta-band h2 em{font-style:italic;font-weight:300;color:var(--accent)}
+.cta-band p{font-size:16px;color:var(--ink-dim);max-width:500px;margin:0 auto 40px;line-height:1.6;font-weight:300}
+.cta-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.cta-legal{margin-top:36px;font-family:var(--mono);font-size:10px;color:var(--ink-faint);letter-spacing:.1em;text-transform:uppercase}
+
+/* ─────────────────────────────────────────────
+   FOOTER
+   ───────────────────────────────────────────── */
+footer{position:relative;z-index:3;border-top:1px solid var(--line);padding:64px var(--pad) 32px;background:var(--bg)}
+.ft-grid{max-width:var(--maxw);margin:0 auto;display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:48px;margin-bottom:48px}
+.ft-brand{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--ink);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.ft-brand img{width:26px;height:26px;object-fit:contain;border-radius:5px;mix-blend-mode:screen}
+.ft-tag{font-size:13px;color:var(--ink-dim);line-height:1.6;margin-bottom:22px;max-width:340px;font-weight:300}
+.ft-badges{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}
+.ft-badge{font-family:var(--mono);font-size:9.5px;padding:4px 10px;border-radius:99px;border:1px solid var(--line-2);color:var(--ink-muted);letter-spacing:.08em;text-transform:uppercase}
+.ft-disc{font-family:var(--mono);font-size:9.5px;color:var(--ink-faint);line-height:1.65;letter-spacing:.02em;max-width:380px}
+.ft-col h5{font-family:var(--mono);font-size:10px;color:var(--ink);letter-spacing:.18em;text-transform:uppercase;margin-bottom:20px;font-weight:600}
+.ft-links{list-style:none;display:flex;flex-direction:column;gap:12px}
+.ft-links a{font-family:var(--mono);font-size:12px;color:var(--ink-muted);transition:color .2s;cursor:none;font-weight:400}
+.ft-links a:hover{color:var(--accent)}
+.ft-bot{max-width:var(--maxw);margin:0 auto;padding-top:28px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
+.ft-copy{font-family:var(--mono);font-size:10.5px;color:var(--ink-muted);letter-spacing:.04em}
+.ft-socials{display:flex;gap:16px}
+.ft-socials a{width:30px;height:30px;border:1px solid var(--line-2);border-radius:var(--r-sm);display:inline-flex;align-items:center;justify-content:center;color:var(--ink-muted);transition:all .2s;cursor:none}
+.ft-socials a:hover{border-color:var(--accent);color:var(--accent)}
+.ft-socials svg{width:14px;height:14px}
+
+/* ─────────────────────────────────────────────
+   PHANTOM MODAL
+   ───────────────────────────────────────────── */
+.ph-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(14px);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .28s}
+.ph-backdrop.open{opacity:1;pointer-events:all}
+.ph-box{background:linear-gradient(180deg,rgba(14,20,40,.98),rgba(10,14,28,.95));border:1px solid var(--line-3);border-radius:var(--r-lg);padding:32px 28px;width:100%;max-width:390px;text-align:center;transform:translateY(20px) scale(.96);transition:transform .32s cubic-bezier(.16,1,.3,1);position:relative;box-shadow:0 40px 100px -20px rgba(0,0,0,.8)}
+.ph-backdrop.open .ph-box{transform:none}
+.ph-logo{width:54px;height:54px;object-fit:contain;border-radius:12px;mix-blend-mode:screen;margin:0 auto 20px;display:block;filter:drop-shadow(0 0 24px rgba(20,241,149,.35))}
+.ph-title{font-family:var(--serif);font-size:22px;font-weight:500;letter-spacing:-.02em;margin-bottom:10px}
+.ph-sub{font-size:13px;color:var(--ink-dim);line-height:1.55;margin-bottom:24px;font-weight:300}
+.ph-btn{display:flex;align-items:center;gap:12px;width:100%;padding:15px 18px;background:linear-gradient(135deg,#9945FF,#7c37d6);border:none;border-radius:var(--r-md);cursor:pointer;transition:all .22s;margin-bottom:8px}
+.ph-btn:hover{transform:translateY(-1px);box-shadow:0 10px 32px rgba(153,69,255,.4)}
+.ph-btn.loading{opacity:.6;pointer-events:none}
+.ph-btn-icon{font-size:22px;flex-shrink:0}
+.ph-btn-txt{text-align:left;flex:1}
+.ph-btn-label{font-size:13.5px;font-weight:600;color:#fff}
+.ph-btn-sub{font-family:var(--mono);font-size:9.5px;color:rgba(255,255,255,.6);margin-top:2px;letter-spacing:.04em}
+.ph-btn-arrow{color:rgba(255,255,255,.5);font-size:14px;transition:transform .2s}
+.ph-btn:hover .ph-btn-arrow{transform:translateX(3px)}
+.ph-err{font-family:var(--mono);font-size:10.5px;color:var(--red);min-height:14px;margin:6px 0;opacity:0;transition:opacity .2s}
+.ph-err.show{opacity:1}
+.ph-no-wallet{font-family:var(--mono);font-size:11px;color:var(--ink-muted);margin-top:6px;display:none}
+.ph-no-wallet a{color:var(--accent)}
+.ph-close{position:absolute;top:14px;right:16px;font-size:18px;color:var(--ink-muted);cursor:pointer;line-height:1;transition:color .2s}
+.ph-close:hover{color:var(--ink)}
+.ph-divider{display:flex;align-items:center;gap:10px;margin:16px 0 12px}
+.ph-div-line{flex:1;height:1px;background:var(--line-2)}
+.ph-div-txt{font-family:var(--mono);font-size:9px;color:var(--ink-muted);letter-spacing:.14em;text-transform:uppercase}
+.ph-badges{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.ph-badge{font-family:var(--mono);font-size:9px;padding:4px 9px;border-radius:99px;border:1px solid var(--line-2);color:var(--ink-muted);letter-spacing:.06em}
+.ph-legal{font-family:var(--mono);font-size:9px;color:var(--ink-faint);margin-top:16px;line-height:1.55;letter-spacing:.02em}
+
+/* ─────────────────────────────────────────────
+   SCROLLBAR
+   ───────────────────────────────────────────── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--line-3);border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:var(--ink-muted)}
+
+/* ─────────────────────────────────────────────
+   RESPONSIVE
+   ───────────────────────────────────────────── */
+@media(max-width:1100px){
+  .hero-grid{grid-template-columns:1fr;gap:48px}
+  .prob-head{grid-template-columns:1fr;gap:24px}
+  .prob-head-r{justify-self:start;max-width:none}
+  .infra-grid{grid-template-columns:1fr;gap:32px}
+  .infra-right{position:static}
+  .faq-grid{grid-template-columns:1fr;gap:32px}
+  .faq-side{position:static}
+  .ft-grid{grid-template-columns:1.4fr 1fr 1fr 1fr}
+  .ft-brand-col{grid-column:1/-1}
+}
+@media(max-width:900px){
+  .prod-grid,.prob-grid,.arch-flow,.metrics-grid{grid-template-columns:repeat(2,1fr)}
+  .price-grid{grid-template-columns:1fr;gap:16px}
+  .arch-step{border-right:none;border-bottom:1px solid var(--line-2)}
+  .arch-step:nth-child(2n){border-right:none}
+  .arch-step:nth-child(1),.arch-step:nth-child(2){border-right:1px solid var(--line-2)}
+  .nav-links{display:none}
+  .nav-r .btn-ghost,.nav-r .btn-solid{display:none}
+  .hamburger{display:flex}
+  .trust-inner{justify-content:center;text-align:center}
+  .trust-logos{justify-content:center;gap:32px}
+}
+@media(max-width:640px){
+  #cur,#cur-r{display:none}
+  body{cursor:auto}
+  a,button{cursor:pointer}
+  nav{padding:12px 18px}
+  .state-bar{margin-top:54px}
+  .prod-grid,.prob-grid,.arch-flow,.metrics-grid{grid-template-columns:1fr}
+  .arch-step{border-right:none !important;border-bottom:1px solid var(--line-2) !important}
+  .arch-step:last-child{border-bottom:none !important}
+  .ft-grid{grid-template-columns:1fr 1fr;gap:28px}
+  .ft-brand-col{grid-column:1/-1}
+  .ft-bot{flex-direction:column;text-align:center}
+  .hero{padding:72px 20px 48px}
+  .sec{padding:64px 20px}
+  .sec-full{padding:64px 0}
+  .sec-full .inn{padding:0 20px}
+  .trust-bar{padding:32px 20px}
+  .trust-logos{gap:22px}
+  footer{padding:48px 20px 24px}
+}
+</style>
+</head>
+<body>
+<div id="cur"></div>
+<div id="cur-r"></div>
+<canvas id="bgc"></canvas>
+<div class="grid-bg"></div>
+<div class="vign"></div>
+<div class="noise"></div>
+
+<!-- ═══════════════════════════ PHANTOM MODAL ═══════════════════════════ -->
+<div class="ph-backdrop" id="phModal" onclick="if(event.target===this)closePhModal()">
+  <div class="ph-box">
+    <span class="ph-close" onclick="closePhModal()">✕</span>
+    <img class="ph-logo" id="phLogo" alt="Assurify"/>
+    <div class="ph-title">Connect Wallet</div>
+    <div class="ph-sub">Connect your Solana wallet to access the Assurify protocol and manage coverage on-chain.</div>
+    <button class="ph-btn" id="phBtn" onclick="connectPhantom()">
+      <div class="ph-btn-icon">👻</div>
+      <div class="ph-btn-txt">
+        <div class="ph-btn-label">Connect with Phantom</div>
+        <div class="ph-btn-sub" id="phBtnSub">Approve in your wallet</div>
+      </div>
+      <div class="ph-btn-arrow" id="phArrow">→</div>
+    </button>
+    <div class="ph-err" id="phErr"></div>
+    <div class="ph-no-wallet" id="phNoWallet">Phantom not detected. <a href="https://phantom.app" target="_blank">Install Phantom →</a></div>
+    <div class="ph-divider"><div class="ph-div-line"></div><div class="ph-div-txt">Solana Mainnet</div><div class="ph-div-line"></div></div>
+    <div class="ph-badges">
+      <div class="ph-badge">Non-custodial</div>
+      <div class="ph-badge">USDC-native</div>
+      <div class="ph-badge">Oracle-verified</div>
+    </div>
+    <div class="ph-legal">Assurify is a decentralized risk-sharing protocol. Not licensed insurance. By connecting, you acknowledge the protocol terms.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ NAV ═══════════════════════════ -->
+<nav id="mainNav">
+  <a class="logo" href="#">
+    <img id="navLogo" alt="Assurify"/>
+    <div class="logo-wrap">
+      <span class="logo-name">Assurify</span>
+      <span class="logo-tag">Protocol · v1.2</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#products">Products</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#metrics">Protocol</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+  <div class="nav-r">
+    <a class="btn-ghost" href="#" onclick="launchApp(event)">Sign in</a>
+    <a class="btn-solid" href="#" onclick="launchApp(event)">Get coverage<span>→</span></a>
+    <button class="hamburger" id="hambBtn" onclick="toggleMenu()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<div class="mob-menu" id="mobMenu">
+  <ul>
+    <li><a href="#products" onclick="toggleMenu()">Products</a></li>
+    <li><a href="#architecture" onclick="toggleMenu()">Architecture</a></li>
+    <li><a href="#metrics" onclick="toggleMenu()">Protocol</a></li>
+    <li><a href="#pricing" onclick="toggleMenu()">Pricing</a></li>
+    <li><a href="#faq" onclick="toggleMenu()">FAQ</a></li>
+  </ul>
+  <div class="mob-menu-btns">
+    <a class="btn-ghost" href="#" onclick="toggleMenu();launchApp(event)">Sign in</a>
+    <a class="btn-solid" href="#" onclick="toggleMenu();launchApp(event)">Get coverage →</a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ STATE BAR ═══════════════════════════ -->
+<div class="state-bar">
+  <div class="state-t" id="stateTicker">
+    <div class="state-i"><span class="pulse"></span><span class="k">Protocol</span><span class="v g">Live · Devnet</span></div>
+    <div class="state-i"><span class="sep"></span><span class="k">TVL</span><span class="v">$4.82M</span></div>
+    <div class="state-i"><span class="sep"></span><span class="k">Active policies</span><span class="v">1,247</span></div>
+    <div class="state-i"><span class="sep"></span><span class="k">Total coverage</span><span class="v">$18.4M</span></div>
+    <div class="state-i"><span class="sep"></span><span class="k">Reserve ratio</span><span class="v g">1.52×</span></div>
+    <div class="state-i"><span class="sep"></span><span class="k">Avg settlement</span><span class="v">47s</span></div>
+    <div class="state-i"><span class="sep"></span><span class="k">LP APY</span><span class="v g">11.3%</span></div>
+    <div class="state-i"><span class="sep"></span><span class="k">Solana TPS</span><span class="v">65K+</span></div>
+    <div class="state-i"><span class="sep"></span><span class="k">Oracle uptime</span><span class="v g">99.97%</span></div>
+    <div class="state-i"><span class="sep"></span><span class="k">Claims paid</span><span class="v">$2.1M</span></div>
+    <div class="state-i"><span class="sep"></span><span class="k">Block</span><span class="v">#342,891,447</span></div>
+    <!-- duplicate for seamless loop -->
+    <div class="state-i"><span class="pulse"></span><span class="k">Protocol</span><span class="v g">Live · Devnet</span></div>
+    <div class="state-i"><span class="sep"></span><span class="k">TVL</span><span class="v">$4.82M</span></div>
+    <div class="state-i"><span class="sep"></span><span class="k">Active policies</span><span class="v">1,247</span></div>
+    <div class="state-i"><span class="sep"></span><span class="k">Total coverage</span><span class="v">$18.4M</span></div>
+    <div class="state-i"><span class="sep"></span><span class="k">Reserve ratio</span><span class="v g">1.52×</span></div>
+    <div class="state-i"><span class="sep"></span><span class="k">Avg settlement</span><span class="v">47s</span></div>
+    <div class="state-i"><span class="sep"></span><span class="k">LP APY</span><span class="v g">11.3%</span></div>
+    <div class="state-i"><span class="sep"></span><span class="k">Solana TPS</span><span class="v">65K+</span></div>
+    <div class="state-i"><span class="sep"></span><span class="k">Oracle uptime</span><span class="v g">99.97%</span></div>
+    <div class="state-i"><span class="sep"></span><span class="k">Claims paid</span><span class="v">$2.1M</span></div>
+    <div class="state-i"><span class="sep"></span><span class="k">Block</span><span class="v">#342,891,447</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ HERO ═══════════════════════════ -->
+<section class="hero">
+  <div class="hero-grid">
+    <div class="hero-main">
+      <div class="hero-badge">
+        <span class="dot"></span>
+        <span>Mainnet Q2 2026</span>
+        <span class="sep-dot"></span>
+        <span>Backed by Uno Re</span>
+      </div>
+      <h1>
+        <span class="l1">Parametric insurance</span>
+        <span class="l2">infrastructure for</span>
+        <span class="l3">autonomous agents.</span>
+      </h1>
+      <p class="hero-lead">
+        Assurify is the <strong>on-chain coverage layer</strong> for AI agents operating capital on Solana. Oracle-verified payouts in USDC for financial loss, per-transaction slippage, and data breach events — settled in under a minute, without adjusters, brokers, or paperwork.
+      </p>
+      <div class="hero-ctas">
+        <button class="cta-p" onclick="launchApp()">Launch protocol<span class="arrow">→</span></button>
+        <a class="cta-s" href="#products">View coverage products</a>
+      </div>
+    </div>
+
+    <!-- Protocol live card -->
+    <div class="hero-card">
+      <div class="hero-card-head">
+        <div class="hc-title">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6v6H9z"/></svg>
+          Protocol Snapshot
+        </div>
+        <div class="hc-live"><span class="pulse"></span>Live</div>
+      </div>
+      <div class="hc-body">
+        <div class="hc-row">
+          <div>
+            <div class="hc-label">Total Value Locked</div>
+            <div class="hc-bar"><div class="hc-bar-f" style="width:68%"></div></div>
+          </div>
+          <div class="hc-val">$4.82<span class="u">M</span></div>
+        </div>
+        <div class="hc-row">
+          <div>
+            <div class="hc-label">Coverage Underwritten</div>
+            <div class="hc-bar"><div class="hc-bar-f" style="width:84%;background:linear-gradient(90deg,var(--blue),var(--sol))"></div></div>
+          </div>
+          <div class="hc-val">$18.4<span class="u">M</span></div>
+        </div>
+        <div class="hc-row">
+          <div>
+            <div class="hc-label">Active Policies</div>
+            <div class="hc-bar"><div class="hc-bar-f" style="width:52%;background:linear-gradient(90deg,var(--accent),var(--amber))"></div></div>
+          </div>
+          <div class="hc-val">1,247</div>
+        </div>
+        <div class="hc-row">
+          <div>
+            <div class="hc-label">Reserve Ratio</div>
+            <div class="hc-bar"><div class="hc-bar-f" style="width:76%"></div></div>
+          </div>
+          <div class="hc-val g">1.52×</div>
+        </div>
+        <div class="hc-row">
+          <div>
+            <div class="hc-label">Avg Settlement Time</div>
+            <div class="hc-bar"><div class="hc-bar-f" style="width:91%"></div></div>
+          </div>
+          <div class="hc-val">47<span class="u">s</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ TRUST BAR ═══════════════════════════ -->
+<div class="trust-bar">
+  <div class="trust-inner">
+    <div class="trust-label">Built on · Integrated with</div>
+    <div class="trust-logos">
+      <div class="trust-item"><span class="mark" style="background:linear-gradient(135deg,#14F195,#9945FF)"></span>Solana</div>
+      <div class="trust-item"><span class="mark" style="background:linear-gradient(135deg,#8A6CF7,#5B8DEF)"></span>Pyth Network</div>
+      <div class="trust-item"><span class="mark" style="background:linear-gradient(135deg,#F97316,#FBBF24)"></span>Switchboard</div>
+      <div class="trust-item"><span class="mark" style="background:linear-gradient(135deg,#2775CA,#1DA1F2)"></span>Circle USDC</div>
+      <div class="trust-item"><span class="mark" style="background:linear-gradient(135deg,#FF6B35,#F7931A)"></span>Uno Re</div>
+      <div class="trust-item"><span class="mark" style="background:linear-gradient(135deg,#E84142,#FC8181)"></span>Kamino</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ PROBLEM BAND ═══════════════════════════ -->
+<section class="prob-band">
+  <div class="prob-wrap">
+    <div class="prob-head reveal">
+      <div class="prob-head-l">
+        <div class="eyebrow">The coverage gap</div>
+        <h2>Autonomous agents<br/>operate capital. None of it is <em>insured</em>.</h2>
+      </div>
+      <div class="prob-head-r">
+        As AI agents increasingly execute on-chain strategies, transact autonomously, and handle sensitive data, the industry's insurance infrastructure has not kept pace. The result is a category of systemic risk with no institutional risk transfer mechanism.
+      </div>
+    </div>
+    <div class="prob-grid reveal-stagger">
+      <div class="pc">
+        <div class="pc-stat r"><span class="sign">$</span>3.4<span style="font-size:.6em;opacity:.7">B</span></div>
+        <div class="pc-h">Lost to DeFi & agent exploits in 2025</div>
+        <div class="pc-label">Autonomous agent failures, smart contract exploits, and MEV extraction. Effectively zero coverage from traditional insurance markets.</div>
+        <div class="pc-src">Source · Chainalysis, Rekt News — 2025 YE</div>
+      </div>
+      <div class="pc">
+        <div class="pc-stat a">0.5<span class="sign">%</span></div>
+        <div class="pc-h">Of DeFi TVL carries active coverage</div>
+        <div class="pc-label">Existing DeFi insurance products cover protocols, not autonomous operators. AI agents have zero dedicated parametric coverage.</div>
+        <div class="pc-src">Source · Nexus Mutual, DefiLlama — Jan 2026</div>
+      </div>
+      <div class="pc">
+        <div class="pc-stat g"><span class="sign">$</span>9.2<span style="font-size:.6em;opacity:.7">B</span></div>
+        <div class="pc-h">Solana DeFi TVL — addressable market</div>
+        <div class="pc-label">Agentic capital on Solana is growing 4.2× YoY. A new class of operator requires a new class of risk transfer infrastructure.</div>
+        <div class="pc-src">Source · DefiLlama, Artemis — Q1 2026</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ PRODUCTS ═══════════════════════════ -->
+<section class="sec" id="products">
+  <div class="sec-head reveal">
+    <div class="eyebrow">01 — Coverage products</div>
+    <h2>Three coverage instruments. <em>One protocol.</em></h2>
+    <p class="sec-sub">Parametric triggers underwritten on-chain. Pricing is risk-based, computed from agent autonomy, capital under management, and historical on-chain behavior.</p>
+  </div>
+  <div class="prod-grid reveal-stagger">
+
+    <div class="prod-card" data-p="fin">
+      <div class="pbadge pbadge-g">⚡ Fully parametric</div>
+      <h3>Financial Loss</h3>
+      <div class="prod-subtitle">Wallet-level drawdown coverage</div>
+      <div class="prod-limit-row">
+        <div class="prod-limit prod-limit-c">$30,000</div>
+      </div>
+      <div class="prod-per">Coverage limit · per session · auto-triggered</div>
+      <p class="prod-desc">Coverage activates when an agent's wallet balance breaches the pre-set drawdown threshold. Switchboard monitors on 60-second intervals; Pyth resolves USD-denominated loss; USDC settles automatically.</p>
+      <ul class="prod-feats feat-g">
+        <li><span class="ic">→</span>On-chain wallet monitoring via Switchboard oracle network</li>
+        <li><span class="ic">→</span>Pyth price feeds for accurate USD-denominated loss calculation</li>
+        <li><span class="ic">→</span>Automatic USDC payout — no claim filing required</li>
+        <li><span class="ic">→</span>Session-bound or continuous coverage modes available</li>
+      </ul>
+      <div class="prod-foot">
+        <div class="prod-price">$89<span style="color:var(--ink-muted);font-weight:400"> / month</span><span class="sm">Base rate · risk-adjusted</span></div>
+        <a href="#pricing" class="prod-cta">Details<span class="a">→</span></a>
+      </div>
+    </div>
+
+    <div class="prod-card" data-p="tra">
+      <div class="pbadge pbadge-a">◈ Per-transaction</div>
+      <h3>Per-Trade Cover</h3>
+      <div class="prod-subtitle">Slippage & execution coverage</div>
+      <div class="prod-limit-row">
+        <div class="prod-limit prod-limit-a">$5,000</div>
+      </div>
+      <div class="prod-per">Max payout · per trade · ~400ms settle</div>
+      <p class="prod-desc">Coverage activates on every transaction. Pyth records the asset price at submission and at execution — if the adverse delta exceeds the configured threshold, USDC settles within the same slot. Built for HFT and market-making agents.</p>
+      <ul class="prod-feats feat-a">
+        <li><span class="ic">→</span>Solana transaction signature serves as unique policy identifier</li>
+        <li><span class="ic">→</span>Pyth price delta — submission timestamp vs execution</li>
+        <li><span class="ic">→</span>Configurable slippage threshold between 0.5% and 5%</li>
+        <li><span class="ic">→</span>No waiting period — coverage active on first trade</li>
+      </ul>
+      <div class="prod-foot">
+        <div class="prod-price">$0.003<span style="color:var(--ink-muted);font-weight:400"> / trade</span><span class="sm">Micro-premium · on execution</span></div>
+        <a href="#pricing" class="prod-cta">Details<span class="a">→</span></a>
+      </div>
+    </div>
+
+    <div class="prod-card" data-p="dat">
+      <div class="pbadge pbadge-p">🔒 Hybrid verified</div>
+      <h3>Data Breach</h3>
+      <div class="prod-subtitle">PII & proprietary data coverage</div>
+      <div class="prod-limit-row">
+        <div class="prod-limit prod-limit-p">$30,000</div>
+      </div>
+      <div class="prod-per">Coverage limit · per incident · 72hr settlement</div>
+      <p class="prod-desc">Coverage for agents that leak, transmit, or mishandle protected data. Policyholders submit cryptographically signed execution logs as evidence. A staked reviewer panel cross-references the on-chain log commitment and settles within 72 hours.</p>
+      <ul class="prod-feats feat-p">
+        <li><span class="ic">→</span>SHA-256 log hash committed on-chain at policy inception</li>
+        <li><span class="ic">→</span>Five-reviewer staked panel — minority voters are slashed</li>
+        <li><span class="ic">→</span>Covers PII, financial data, and proprietary information</li>
+        <li><span class="ic">→</span>Regulatory fine coverage included in the policy limit</li>
+      </ul>
+      <div class="prod-foot">
+        <div class="prod-price">$60<span style="color:var(--ink-muted);font-weight:400"> / month</span><span class="sm">Base rate · risk-adjusted</span></div>
+        <a href="#pricing" class="prod-cta">Details<span class="a">→</span></a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════ ARCHITECTURE ═══════════════════════════ -->
+<section class="sec-full" id="architecture">
+  <div class="inn">
+    <div class="sec-head reveal">
+      <div class="eyebrow">02 — Protocol architecture</div>
+      <h2>From policy inception to payout, <em>every step is on-chain.</em></h2>
+      <p class="sec-sub">No intermediaries. No manual reviews for parametric triggers. No counterparty risk. The same Solana infrastructure that settles DeFi trades settles your coverage.</p>
+    </div>
+    <div class="arch-wrap reveal">
+      <div class="arch-flow">
+        <div class="arch-step">
+          <div class="arch-head">
+            <span class="arch-n">01</span>
+            <span class="arch-dur">~30s</span>
+          </div>
+          <div class="arch-title">Register agent</div>
+          <div class="arch-desc">Connect Phantom or Solflare. Register the AI agent wallet address. Select coverage type. For data breach policies, the log hash is committed on-chain at inception.</div>
+          <div class="arch-meta">
+            <div class="arch-meta-r"><span class="k">Protocol</span><span class="v">Anchor</span></div>
+            <div class="arch-meta-r"><span class="k">Tx cost</span><span class="v">~0.00005 SOL</span></div>
+          </div>
+        </div>
+        <div class="arch-step">
+          <div class="arch-head">
+            <span class="arch-n">02</span>
+            <span class="arch-dur">Instant</span>
+          </div>
+          <div class="arch-title">Premium in USDC</div>
+          <div class="arch-desc">Monthly or per-trade premiums deducted in USDC. A 10% co-insurance deposit is locked in escrow. Risk-based pricing is computed on-chain from agent autonomy and capital under management.</div>
+          <div class="arch-meta">
+            <div class="arch-meta-r"><span class="k">Settlement</span><span class="v">USDC</span></div>
+            <div class="arch-meta-r"><span class="k">Escrow</span><span class="v">10% co-insurance</span></div>
+          </div>
+        </div>
+        <div class="arch-step">
+          <div class="arch-head">
+            <span class="arch-n">03</span>
+            <span class="arch-dur">Continuous</span>
+          </div>
+          <div class="arch-title">Oracle monitoring</div>
+          <div class="arch-desc">Switchboard reads the agent wallet on 60-second intervals. Per-trade agents are monitored on every transaction. Data breach agents produce signed operational logs throughout the policy period.</div>
+          <div class="arch-meta">
+            <div class="arch-meta-r"><span class="k">Price feed</span><span class="v">Pyth</span></div>
+            <div class="arch-meta-r"><span class="k">Wallet feed</span><span class="v">Switchboard</span></div>
+          </div>
+        </div>
+        <div class="arch-step">
+          <div class="arch-head">
+            <span class="arch-n">04</span>
+            <span class="arch-dur">47s avg</span>
+          </div>
+          <div class="arch-title">Parametric payout</div>
+          <div class="arch-desc">Financial loss and per-trade payouts trigger automatically on oracle confirmation. Data breach: evidence is submitted, staked reviewers vote, and USDC transfers on 3-of-5 approval within 72 hours.</div>
+          <div class="arch-meta">
+            <div class="arch-meta-r"><span class="k">Trigger</span><span class="v">Automatic</span></div>
+            <div class="arch-meta-r"><span class="k">Payout</span><span class="v">USDC to wallet</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ INFRASTRUCTURE ═══════════════════════════ -->
+<section class="sec" id="infrastructure">
+  <div class="sec-head reveal">
+    <div class="eyebrow">03 — Technical infrastructure</div>
+    <h2>Institutional-grade primitives, <em>composable by design.</em></h2>
+    <p class="sec-sub">Assurify is an Anchor program deployed on Solana, with dual-oracle verification, a USDC-denominated reserve pool, and a staked review panel for hybrid-settled policies.</p>
+  </div>
+  <div class="infra-grid">
+    <div class="infra-left reveal-stagger">
+      <div class="infra-feat">
+        <div class="infra-feat-head">
+          <div class="infra-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>
+          </div>
+          <h4>Dual-oracle verification</h4>
+        </div>
+        <p>Pyth Network provides sub-second price feeds for valuation. Switchboard provides on-chain wallet monitoring at 60-second intervals. The combined stack means every parametric trigger is independently verified by two battle-tested oracle networks before payout.</p>
+      </div>
+      <div class="infra-feat">
+        <div class="infra-feat-head">
+          <div class="infra-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6v6H9z"/></svg>
+          </div>
+          <h4>USDC reserve pool · 1.5× ratio</h4>
+        </div>
+        <p>The protocol maintains a reserve backing of 1.5× outstanding coverage, funded by external liquidity providers earning 8–14% APY. Idle capital is deployed to Kamino Finance for additional base yield, with a seven-day unbonding period.</p>
+      </div>
+      <div class="infra-feat">
+        <div class="infra-feat-head">
+          <div class="infra-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h4>Reinsurance backstop · Uno Re</h4>
+        </div>
+        <p>A parametric reinsurance tranche through Uno Re provides catastrophic-loss coverage above protocol reserves. This institutional-grade backstop activates only under systemic drawdown conditions, protecting both LPs and policyholders.</p>
+      </div>
+      <div class="infra-feat">
+        <div class="infra-feat-head">
+          <div class="infra-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <h4>Staked reviewer panel</h4>
+        </div>
+        <p>Data breach claims are settled by a panel of five independently staked reviewers. Approvals require 3-of-5 consensus. Reviewers voting in the minority on clear cases are slashed, aligning incentives with protocol integrity rather than individual claim outcomes.</p>
+      </div>
+    </div>
+
+    <div class="infra-right reveal">
+      <div class="infra-code-head">
+        <div class="infra-code-dots"><span></span><span></span><span></span></div>
+        <div class="infra-code-title">programs / policy.rs</div>
+      </div>
+      <pre class="infra-code"><span class="c">// Parametric financial loss trigger</span>
+<span class="k">pub fn</span> <span class="f">settle_claim</span>(
+    ctx: <span class="n">Context</span>&lt;<span class="n">SettleClaim</span>&gt;,
+) -&gt; <span class="n">Result</span>&lt;()&gt; {
+    <span class="k">let</span> policy = &amp;ctx.accounts.policy;
+    <span class="k">let</span> oracle = &amp;ctx.accounts.pyth_feed;
+
+    <span class="c">// Read verified Pyth price</span>
+    <span class="k">let</span> price = <span class="f">get_pyth_price</span>(oracle)?;
+    <span class="k">let</span> balance = <span class="f">read_wallet</span>(
+        &amp;policy.agent_wallet
+    )?;
+
+    <span class="c">// Compute drawdown vs threshold</span>
+    <span class="k">let</span> loss = policy.baseline
+        .<span class="f">checked_sub</span>(balance * price)
+        .<span class="f">ok_or</span>(<span class="n">ErrorCode</span>::Underflow)?;
+
+    <span class="k">require!</span>(
+        loss &gt;= policy.threshold,
+        <span class="n">ErrorCode</span>::NoTrigger
+    );
+
+    <span class="c">// Transfer USDC payout to agent</span>
+    <span class="f">token::transfer</span>(
+        ctx.<span class="f">accounts</span>()
+            .<span class="f">into_transfer_ctx</span>()
+            .<span class="f">with_signer</span>(&amp;[<span class="s">b"reserve"</span>]),
+        loss.<span class="f">min</span>(policy.limit),
+    )?;
+
+    <span class="f">emit!</span>(<span class="n">ClaimSettled</span> {
+        policy: policy.key(),
+        amount: loss,
+        slot: <span class="n">Clock</span>::<span class="f">get</span>()?.slot,
+    });
+
+    <span class="n">Ok</span>(())
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ METRICS ═══════════════════════════ -->
+<section class="sec-full" id="metrics" style="background:linear-gradient(180deg,rgba(8,11,21,.4),transparent)">
+  <div class="inn">
+    <div class="sec-head reveal">
+      <div class="eyebrow">04 — Protocol state</div>
+      <h2>Transparent, verifiable, <em>on-chain.</em></h2>
+      <p class="sec-sub">Every policy, premium, and payout is observable on-chain. The following metrics are drawn from the live protocol state as of the most recent block.</p>
+    </div>
+    <div class="metrics-grid reveal-stagger">
+      <div class="metric">
+        <div class="metric-label">Total Value Locked</div>
+        <div class="metric-val">$4.82<span style="font-size:.6em;color:var(--ink-muted)">M</span></div>
+        <div class="metric-delta"><span class="up">↑ 23.4%</span><span style="color:var(--ink-muted)">· 30d</span></div>
+        <div class="metric-spark"><svg viewBox="0 0 100 28" preserveAspectRatio="none"><polyline fill="none" stroke="#14F195" stroke-width="1.5" points="0,22 10,20 20,18 30,19 40,15 50,14 60,11 70,10 80,8 90,5 100,3"/><polyline fill="url(#g1)" stroke="none" points="0,22 10,20 20,18 30,19 40,15 50,14 60,11 70,10 80,8 90,5 100,3 100,28 0,28"/><defs><linearGradient id="g1" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#14F195" stop-opacity=".3"/><stop offset="100%" stop-color="#14F195" stop-opacity="0"/></linearGradient></defs></svg></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Coverage Underwritten</div>
+        <div class="metric-val">$18.4<span style="font-size:.6em;color:var(--ink-muted)">M</span></div>
+        <div class="metric-delta"><span class="up">↑ 41.2%</span><span style="color:var(--ink-muted)">· 30d</span></div>
+        <div class="metric-spark"><svg viewBox="0 0 100 28" preserveAspectRatio="none"><polyline fill="none" stroke="#6CA9F0" stroke-width="1.5" points="0,24 10,23 20,20 30,21 40,17 50,14 60,12 70,9 80,7 90,5 100,3"/></svg></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Active Policies</div>
+        <div class="metric-val">1,247</div>
+        <div class="metric-delta"><span class="up">↑ 18.7%</span><span style="color:var(--ink-muted)">· 30d</span></div>
+        <div class="metric-spark"><svg viewBox="0 0 100 28" preserveAspectRatio="none"><polyline fill="none" stroke="#C084FC" stroke-width="1.5" points="0,21 10,20 20,19 30,17 40,16 50,13 60,12 70,10 80,9 90,7 100,5"/></svg></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Reserve Ratio</div>
+        <div class="metric-val g">1.52×</div>
+        <div class="metric-delta"><span class="up">↑ 0.08</span><span style="color:var(--ink-muted)">· 30d</span></div>
+        <div class="metric-spark"><svg viewBox="0 0 100 28" preserveAspectRatio="none"><polyline fill="none" stroke="#14F195" stroke-width="1.5" points="0,14 10,13 20,14 30,12 40,13 50,11 60,10 70,11 80,9 90,8 100,7"/></svg></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Claims Paid · All Time</div>
+        <div class="metric-val">$2.14<span style="font-size:.6em;color:var(--ink-muted)">M</span></div>
+        <div class="metric-delta"><span style="color:var(--ink-dim)">127 settled</span></div>
+        <div class="metric-spark"><svg viewBox="0 0 100 28" preserveAspectRatio="none"><polyline fill="none" stroke="#F0B050" stroke-width="1.5" points="0,26 10,25 20,24 30,22 40,20 50,18 60,15 70,13 80,10 90,7 100,4"/></svg></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Avg Settlement Time</div>
+        <div class="metric-val">47<span style="font-size:.6em;color:var(--ink-muted)">s</span></div>
+        <div class="metric-delta"><span class="up">↓ 12s</span><span style="color:var(--ink-muted)">· 30d</span></div>
+        <div class="metric-spark"><svg viewBox="0 0 100 28" preserveAspectRatio="none"><polyline fill="none" stroke="#14F195" stroke-width="1.5" points="0,8 10,10 20,9 30,12 40,14 50,15 60,17 70,19 80,20 90,22 100,24"/></svg></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">LP APY · Trailing 30d</div>
+        <div class="metric-val g">11.3<span style="font-size:.6em;color:var(--ink-muted)">%</span></div>
+        <div class="metric-delta"><span class="up">↑ 0.6pp</span><span style="color:var(--ink-muted)">· vs prior</span></div>
+        <div class="metric-spark"><svg viewBox="0 0 100 28" preserveAspectRatio="none"><polyline fill="none" stroke="#14F195" stroke-width="1.5" points="0,18 10,16 20,17 30,14 40,12 50,13 60,11 70,9 80,10 90,8 100,7"/></svg></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Oracle Uptime · 90d</div>
+        <div class="metric-val g">99.97<span style="font-size:.6em;color:var(--ink-muted)">%</span></div>
+        <div class="metric-delta"><span style="color:var(--ink-dim)">2 feeds monitored</span></div>
+        <div class="metric-spark"><svg viewBox="0 0 100 28" preserveAspectRatio="none"><polyline fill="none" stroke="#14F195" stroke-width="1.5" points="0,5 10,5 20,6 30,5 40,5 50,6 60,5 70,7 80,5 90,5 100,5"/></svg></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ PRICING ═══════════════════════════ -->
+<section class="sec" id="pricing">
+  <div class="sec-head reveal">
+    <div class="eyebrow">05 — Pricing</div>
+    <h2>Transparent, <em>risk-based pricing.</em></h2>
+    <p class="sec-sub">Premiums are computed on-chain from each agent's risk profile — autonomy level, capital under management, and historical operational behavior. No brokers, no hidden fees, no manual underwriting cycles.</p>
+  </div>
+  <div class="price-grid reveal-stagger">
+
+    <div class="price-c">
+      <div class="p-tier">Financial Loss</div>
+      <div class="p-tier-desc">Wallet-level drawdown coverage for session-bound or continuous operation.</div>
+      <div class="p-amt-wrap">
+        <div class="p-amt g">$89</div>
+        <div class="p-unit">/ mo</div>
+      </div>
+      <div class="p-period">Base rate · up to $30K coverage</div>
+      <ul class="p-list">
+        <li><svg class="chk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Fully parametric — no claim filing required</li>
+        <li><svg class="chk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Dual-oracle verification (Pyth + Switchboard)</li>
+        <li><svg class="chk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Automatic USDC settlement on trigger</li>
+        <li><svg class="chk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Session or continuous coverage modes</li>
+        <li><svg class="chk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Cancel anytime — escrow returned in full</li>
+      </ul>
+      <a href="#" onclick="launchApp(event)" class="pbtn pb-out">Get financial coverage →</a>
+    </div>
+
+    <div class="price-c">
+      <div class="p-tier">Per-Trade Cover</div>
+      <div class="p-tier-desc">Per-transaction slippage coverage for HFT and market-making agents.</div>
+      <div class="p-amt-wrap">
+        <div class="p-amt a">$0.003</div>
+        <div class="p-unit">/ tx</div>
+      </div>
+      <div class="p-period">Micro-premium · $5K max per trade</div>
+      <ul class="p-list">
+        <li><svg class="chk" viewBox="0 0 24 24" fill="none" stroke="#F0B050" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Coverage on every transaction — no selection</li>
+        <li><svg class="chk" viewBox="0 0 24 24" fill="none" stroke="#F0B050" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Pyth price delta — submission vs execution</li>
+        <li><svg class="chk" viewBox="0 0 24 24" fill="none" stroke="#F0B050" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Micro-premium deducted automatically</li>
+        <li><svg class="chk" viewBox="0 0 24 24" fill="none" stroke="#F0B050" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Configurable slippage threshold (0.5–5%)</li>
+        <li><svg class="chk" viewBox="0 0 24 24" fill="none" stroke="#F0B050" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>No monthly minimum commitment</li>
+      </ul>
+      <a href="#" onclick="launchApp(event)" class="pbtn" style="border:1px solid rgba(240,176,80,.3);color:var(--amber);background:rgba(240,176,80,.04)">Get per-trade coverage →</a>
+    </div>
+
+    <div class="price-c feat">
+      <div class="pop-flag">Most popular</div>
+      <div class="p-tier">Full Coverage Bundle</div>
+      <div class="p-tier-desc">Financial loss and data breach coverage, bundled for comprehensive agent protection.</div>
+      <div class="p-amt-wrap">
+        <div class="p-amt f">$149</div>
+        <div class="p-unit">/ mo</div>
+      </div>
+      <div class="p-period">Base rate · $30K each policy</div>
+      <ul class="p-list">
+        <li><svg class="chk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Everything in Financial Loss coverage</li>
+        <li><svg class="chk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Data Breach coverage up to $30K</li>
+        <li><svg class="chk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>On-chain log hash commitment</li>
+        <li><svg class="chk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>72hr staked reviewer settlement</li>
+        <li><svg class="chk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>DAO governance escalation layer</li>
+      </ul>
+      <a href="#" onclick="launchApp(event)" class="pbtn pb-fill">Get full coverage →</a>
+    </div>
+
+  </div>
+
+  <!-- Enterprise / LP callout -->
+  <div class="reveal" style="margin-top:32px;padding:32px 36px;border:1px solid var(--line-2);border-radius:var(--r-md);background:linear-gradient(90deg,rgba(12,16,32,.6),rgba(8,11,21,.3));display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center">
+    <div>
+      <div class="eyebrow" style="margin-bottom:12px">Institutional & LP</div>
+      <div style="font-family:var(--serif);font-size:22px;font-weight:500;margin-bottom:8px;letter-spacing:-.015em">Running a fleet of agents, or providing reserve liquidity?</div>
+      <div style="font-size:14px;color:var(--ink-dim);font-weight:300;line-height:1.6;max-width:680px">Bespoke pricing and coverage limits for desks operating multiple autonomous agents. LPs earn 8–14% APY on USDC deployed to the reserve pool, with a 7-day unbonding period and Kamino base-yield exposure.</div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <a href="mailto:institutional@assurify.io" class="btn-ghost">Institutional</a>
+      <a href="#" onclick="launchApp(event)" class="btn-solid">Provide liquidity →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ FAQ ═══════════════════════════ -->
+<section class="sec-full" id="faq" style="border-top:1px solid var(--line)">
+  <div class="inn">
+    <div class="faq-grid">
+      <div class="faq-side reveal">
+        <div class="eyebrow">06 — FAQ</div>
+        <h2>Questions, <em>answered.</em></h2>
+        <p>Common questions about the protocol, coverage triggers, payout mechanics, and LP participation. For anything not covered here, reach out directly.</p>
+        <a href="mailto:hello@assurify.io" class="faq-contact">hello@assurify.io →</a>
+      </div>
+      <div class="faq-list reveal">
+        <div class="faq-item">
+          <div class="faq-q" onclick="faq(this)">Is Assurify licensed insurance? <span class="faq-ic">+</span></div>
+          <div class="faq-a">Assurify operates as a decentralized risk-sharing protocol, not a licensed insurance company. Coverage is provided through on-chain smart contracts governed by the protocol DAO, structurally similar to Nexus Mutual's discretionary mutual model. Users should review how their jurisdiction treats DeFi risk-sharing protocols before participating.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q" onclick="faq(this)">How does financial loss payout work? <span class="faq-ic">+</span></div>
+          <div class="faq-a">When your agent's wallet balance drops below the threshold set at policy inception, Switchboard's on-chain feed detects the loss, Pyth calculates the USD-denominated amount, and the smart contract transfers USDC to your wallet automatically. No claim filing, no human review, no waiting — coverage typically settles within one oracle cycle (60 seconds or less).</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q" onclick="faq(this)">How does per-trade coverage work? <span class="faq-ic">+</span></div>
+          <div class="faq-a">Every time your AI agent submits a transaction, the policy program records the Pyth price of the asset at submission. After execution, the program compares the actual execution price to submission. If the negative delta (slippage plus adverse movement) exceeds your configured threshold, a USDC payout triggers automatically, capped at $5,000. The micro-premium of approximately $0.003 per trade is deducted from your pre-funded USDC deposit.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q" onclick="faq(this)">What is the 30-day waiting period? <span class="faq-ic">+</span></div>
+          <div class="faq-a">New Financial Loss policies cannot file claims for the first 30 days, preventing coverage purchases after a known compromise event. Per-Trade Cover has no waiting period — it is active on the first trade. Data Breach policies require 30 days of pre-existing signed operation logs before coverage is issued.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q" onclick="faq(this)">What is the co-insurance escrow? <span class="faq-ic">+</span></div>
+          <div class="faq-a">Policyholders lock 10% of their coverage limit (e.g. $3,000 on a $30K policy) at purchase. This amount is returned in full on cancellation or after an approved claim. It is forfeited entirely on fraudulent claims and 50% on claims rejected for insufficient evidence. This creates real skin in the game with zero additional cost to honest claimants.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q" onclick="faq(this)">Can I earn yield as a liquidity provider? <span class="faq-ic">+</span></div>
+          <div class="faq-a">Yes. The protocol accepts USDC deposits into the reserve pool from external LPs. 15% of all premiums flow to the surplus fund first, with the remainder distributed pro-rata to LPs. Idle capital is deployed to Kamino Finance for additional base yield. Target APY is 8–14%, with a 7-day unbonding period.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q" onclick="faq(this)">Who provides the reinsurance backstop? <span class="faq-ic">+</span></div>
+          <div class="faq-a">Catastrophic loss coverage above the protocol's native reserves is provided through a parametric reinsurance tranche with Uno Re. This backstop activates only under systemic drawdown conditions, providing an additional institutional-grade layer of protection for both LPs and policyholders.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ CTA BAND ═══════════════════════════ -->
+<section class="cta-band">
+  <div class="cta-inner reveal">
+    <h2>Protect every agent<br/>you operate. <em>On-chain.</em></h2>
+    <p>Connect Phantom and have coverage live in under two minutes. No paperwork, no brokers, no waiting room — just parametric protection that settles when your agent needs it.</p>
+    <div class="cta-row">
+      <button class="cta-p" onclick="launchApp()">Launch protocol<span class="arrow">→</span></button>
+      <a class="cta-s" href="#faq">Read FAQ</a>
+    </div>
+    <div class="cta-legal">Solana Devnet · Mainnet Q2 2026 · Audited by Ottersec</div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ FOOTER ═══════════════════════════ -->
+<footer>
+  <div class="ft-grid">
+    <div class="ft-brand-col">
+      <div class="ft-brand">
+        <img id="footerLogo" alt="Assurify"/>
+        Assurify
+      </div>
+      <p class="ft-tag">Parametric insurance infrastructure for autonomous AI agents. Oracle-verified coverage, settled in USDC on Solana.</p>
+      <div class="ft-badges">
+        <span class="ft-badge">Solana-native</span>
+        <span class="ft-badge">Pyth + Switchboard</span>
+        <span class="ft-badge">USDC settled</span>
+        <span class="ft-badge">DAO-governed</span>
+      </div>
+      <div class="ft-disc">Assurify is a decentralized risk-sharing protocol, not a licensed insurance company. Coverage is provided through on-chain smart contracts governed by the protocol DAO. This site does not constitute financial or legal advice. Not available where prohibited.</div>
+    </div>
+    <div class="ft-col">
+      <h5>Products</h5>
+      <ul class="ft-links">
+        <li><a href="#products">Financial Loss</a></li>
+        <li><a href="#products">Per-Trade Cover</a></li>
+        <li><a href="#products">Data Breach</a></li>
+        <li><a href="#pricing">Bundle pricing</a></li>
+        <li><a href="#">LP / Earn yield</a></li>
+      </ul>
+    </div>
+    <div class="ft-col">
+      <h5>Protocol</h5>
+      <ul class="ft-links">
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#metrics">Protocol state</a></li>
+        <li><a href="#">Documentation</a></li>
+        <li><a href="#">Audit reports</a></li>
+        <li><a href="#">Governance</a></li>
+      </ul>
+    </div>
+    <div class="ft-col">
+      <h5>Resources</h5>
+      <ul class="ft-links">
+        <li><a href="#faq">FAQ</a></li>
+        <li><a href="#">Whitepaper</a></li>
+        <li><a href="#">Brand kit</a></li>
+        <li><a href="#">Press</a></li>
+        <li><a href="#">Blog</a></li>
+      </ul>
+    </div>
+    <div class="ft-col">
+      <h5>Company</h5>
+      <ul class="ft-links">
+        <li><a href="mailto:hello@assurify.io">Contact</a></li>
+        <li><a href="mailto:institutional@assurify.io">Institutional</a></li>
+        <li><a href="#">Careers</a></li>
+        <li><a href="#">Privacy</a></li>
+        <li><a href="#">Terms</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="ft-bot">
+    <div class="ft-copy">© 2026 Assurify Protocol · All rights reserved</div>
+    <div class="ft-socials">
+      <a href="https://twitter.com/assurify_sol" target="_blank" aria-label="Twitter"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+      <a href="#" aria-label="GitHub"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.387.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a>
+      <a href="#" aria-label="Discord"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.8 19.8 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg></a>
+      <a href="#" aria-label="Mirror"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></a>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════
+// LOGO
+// ═══════════════════════════════════════════════
+const LOGO_URI='data:image/jpeg;base64,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Ld/LYjy/vby/uZXN9dV7qvL2qlao5yfxfM+AOa+S9/xTutMGlw6eNsVYgABg6AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB//9k=';
+['navLogo','phLogo','footerLogo'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.src=LOGO_URI;
+});
+
+// ═══════════════════════════════════════════════
+// PHANTOM MODAL / WALLET CONNECTION
+// ═══════════════════════════════════════════════
+function launchApp(e){
+  if(e)e.preventDefault();
+  const saved=sessionStorage.getItem('assurify_wallet');
+  if(saved){window.location.href='assurify-app.html';return;}
+  openPhModal();
+}
+function openPhModal(){document.getElementById('phModal').classList.add('open')}
+function closePhModal(){document.getElementById('phModal').classList.remove('open')}
+
+async function connectPhantom(){
+  const btn=document.getElementById('phBtn'),
+        sub=document.getElementById('phBtnSub'),
+        err=document.getElementById('phErr'),
+        arrow=document.getElementById('phArrow');
+  const provider=window.phantom?.solana??window.solana;
+  if(!provider?.isPhantom){
+    document.getElementById('phNoWallet').style.display='block';
+    showPhErr('Phantom not detected.');
+    return;
+  }
+  btn.classList.add('loading');
+  sub.textContent='Waiting for approval…';
+  arrow.textContent='⏳';
+  err.classList.remove('show');
+  try{
+    const resp=await provider.connect();
+    const pubkey=resp.publicKey.toString();
+    const short=pubkey.slice(0,4)+'…'+pubkey.slice(-4);
+    sessionStorage.setItem('assurify_wallet',pubkey);
+    sessionStorage.setItem('assurify_wallet_short',short);
+    sub.textContent='Connected. Redirecting…';
+    arrow.textContent='✓';
+    setTimeout(()=>{window.location.href='assurify-app.html';},700);
+  }catch(e){
+    btn.classList.remove('loading');
+    sub.textContent='Approve in your wallet';
+    arrow.textContent='→';
+    if(e.code===4001){
+      showPhErr('Connection rejected.');
+    }else{
+      // Demo fallback
+      sub.textContent='Demo mode…';
+      arrow.textContent='⏳';
+      sessionStorage.setItem('assurify_wallet','DEMO');
+      sessionStorage.setItem('assurify_wallet_short','7xKp…m3Qr');
+      setTimeout(()=>{window.location.href='assurify-app.html';},800);
+    }
+  }
+}
+function showPhErr(msg){
+  const el=document.getElementById('phErr');
+  el.textContent=msg;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),4000);
+}
+
+// ═══════════════════════════════════════════════
+// MOBILE MENU
+// ═══════════════════════════════════════════════
+function toggleMenu(){
+  const m=document.getElementById('mobMenu'),h=document.getElementById('hambBtn');
+  m.classList.toggle('open');
+  h.classList.toggle('open');
+  document.body.style.overflow=m.classList.contains('open')?'hidden':'';
+}
+window.addEventListener('scroll',()=>{
+  const m=document.getElementById('mobMenu');
+  if(m&&m.classList.contains('open')){
+    m.classList.remove('open');
+    document.getElementById('hambBtn').classList.remove('open');
+    document.body.style.overflow='';
+  }
+  // Nav shadow on scroll
+  const nav=document.getElementById('mainNav');
+  if(nav){
+    if(window.scrollY>20)nav.classList.add('scrolled');
+    else nav.classList.remove('scrolled');
+  }
+},{passive:true});
+
+// ═══════════════════════════════════════════════
+// FAQ ACCORDION
+// ═══════════════════════════════════════════════
+function faq(el){
+  const i=el.parentElement,
+        o=i.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(x=>x.classList.remove('open'));
+  if(!o)i.classList.add('open');
+}
+
+// ═══════════════════════════════════════════════
+// CURSOR
+// ═══════════════════════════════════════════════
+const cur=document.getElementById('cur'),ring=document.getElementById('cur-r');
+let mx=0,my=0,rx=0,ry=0;
+addEventListener('mousemove',e=>{
+  mx=e.clientX;my=e.clientY;
+  cur.style.left=mx+'px';cur.style.top=my+'px';
+});
+(function lp(){
+  rx+=(mx-rx)*.1;ry+=(my-ry)*.1;
+  ring.style.left=rx+'px';ring.style.top=ry+'px';
+  requestAnimationFrame(lp);
+})();
+document.querySelectorAll('a,button,.faq-q,.prod-card,.price-c,.ph-btn,.metric,.infra-feat,.arch-step,.pc').forEach(el=>{
+  el.addEventListener('mouseenter',()=>document.body.classList.add('hov'));
+  el.addEventListener('mouseleave',()=>document.body.classList.remove('hov'));
+});
+
+// ═══════════════════════════════════════════════
+// SCROLL REVEAL
+// ═══════════════════════════════════════════════
+const ro=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting){
+    e.target.classList.add('in');
+    ro.unobserve(e.target);
+  }
+}),{threshold:.08,rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.reveal,.reveal-stagger').forEach(el=>ro.observe(el));
+
+// ═══════════════════════════════════════════════
+// THREE.JS — INSTITUTIONAL LATTICE BACKGROUND
+// Refined geometric scene with subtle motion
+// ═══════════════════════════════════════════════
+(function(){
+  const cv=document.getElementById('bgc');
+  const rr=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+  rr.setPixelRatio(Math.min(devicePixelRatio,2));
+  rr.setClearColor(0x05070d,1);
+
+  const sc=new THREE.Scene();
+  const cm=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.1,200);
+  cm.position.z=30;
+
+  function rsz(){
+    rr.setSize(innerWidth,innerHeight);
+    cm.aspect=innerWidth/innerHeight;
+    cm.updateProjectionMatrix();
+  }
+  rsz();
+  addEventListener('resize',rsz,{passive:true});
+
+  // Palette
+  const GREEN=new THREE.Color(0x14F195),
+        PURPLE=new THREE.Color(0x9945FF),
+        BLUE=new THREE.Color(0x6CA9F0);
+
+  // Wireframe geometric forms — refined, less chaotic than before
+  function ico(r,d,c,x,y,z,s,op){
+    const m=new THREE.Mesh(
+      new THREE.IcosahedronGeometry(r,d),
+      new THREE.MeshBasicMaterial({
+        color:c,
+        wireframe:true,
+        transparent:true,
+        opacity:op
+      })
+    );
+    m.position.set(x,y,z);
+    m.userData.s=s;
+    sc.add(m);
+    return m;
+  }
+
+  // Central hero form — large, slowly rotating
+  const central=ico(8,1,GREEN,0,0,-2,{x:.0006,y:.0008,z:.0004},.12);
+
+  // Supporting forms — offset, smaller
+  const forms=[
+    ico(4,0,PURPLE,-20,10,-15,{x:.0011,y:.0007,z:.0008},.10),
+    ico(3.5,0,BLUE,22,-8,-12,{x:.0008,y:.0013,z:.0006},.10),
+    ico(2.2,0,GREEN,14,14,-8,{x:.0016,y:.0011,z:.0009},.09),
+    ico(1.8,0,PURPLE,-16,-12,-10,{x:.0014,y:.0017,z:.0007},.09),
+    ico(1.4,0,BLUE,-8,18,-20,{x:.0018,y:.001,z:.0012},.08),
+  ];
+
+  // Orbital rings — suggests a structured system, not chaos
+  const ringMat=(c,op)=>new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:op});
+  const r1=new THREE.Mesh(new THREE.TorusGeometry(13,.04,4,120),ringMat(GREEN,.09));
+  r1.rotation.x=Math.PI/3.5;
+  sc.add(r1);
+
+  const r2=new THREE.Mesh(new THREE.TorusGeometry(10,.03,4,100),ringMat(PURPLE,.07));
+  r2.rotation.x=-Math.PI/4;
+  r2.rotation.y=Math.PI/6;
+  sc.add(r2);
+
+  const r3=new THREE.Mesh(new THREE.TorusGeometry(16,.025,4,140),ringMat(BLUE,.05));
+  r3.rotation.x=Math.PI/5;
+  r3.rotation.z=Math.PI/7;
+  sc.add(r3);
+
+  // Particle field — starfield feeling for depth
+  const PN=900;
+  const pp=new Float32Array(PN*3),pc=new Float32Array(PN*3);
+  const colors=[GREEN,PURPLE,BLUE];
+  for(let i=0;i<PN;i++){
+    pp[i*3]=(Math.random()-.5)*130;
+    pp[i*3+1]=(Math.random()-.5)*100;
+    pp[i*3+2]=(Math.random()-.5)*80-10;
+    const c=colors[~~(Math.random()*3)];
+    pc[i*3]=c.r;pc[i*3+1]=c.g;pc[i*3+2]=c.b;
+  }
+  const pg=new THREE.BufferGeometry();
+  pg.setAttribute('position',new THREE.BufferAttribute(pp,3));
+  pg.setAttribute('color',new THREE.BufferAttribute(pc,3));
+  const points=new THREE.Points(pg,new THREE.PointsMaterial({
+    size:.08,
+    vertexColors:true,
+    transparent:true,
+    opacity:.5,
+    sizeAttenuation:true
+  }));
+  sc.add(points);
+
+  // Connecting lines between central and satellite forms — a network feel
+  const lineMat=new THREE.LineBasicMaterial({color:GREEN,transparent:true,opacity:.08});
+  forms.forEach(f=>{
+    const geo=new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0,0,-2),
+      f.position.clone()
+    ]);
+    sc.add(new THREE.Line(geo,lineMat));
+  });
+
+  // Logo ghost plane (subtle presence in bg)
+  const logoImg=document.getElementById('navLogo');
+  if(logoImg){
+    const tex=new THREE.Texture();
+    const tmp=new Image();
+    tmp.onload=function(){
+      tex.image=tmp;
+      tex.needsUpdate=true;
+      tex.minFilter=THREE.LinearFilter;
+      const m1=new THREE.MeshBasicMaterial({
+        map:tex,
+        transparent:true,
+        opacity:.035,
+        depthWrite:false,
+        side:THREE.DoubleSide
+      });
+      const p1=new THREE.Mesh(new THREE.PlaneGeometry(18,18),m1);
+      p1.position.set(0,0,-8);
+      sc.add(p1);
+      sc.userData.ghostPlane=p1;
+    };
+    tmp.src=logoImg.src||LOGO_URI;
+  }
+
+  // Parallax from mouse position
+  let tx=0,ty=0,cx=0,cy=0,t=0;
+  addEventListener('mousemove',e=>{
+    tx=(e.clientX/innerWidth-.5)*2;
+    ty=(e.clientY/innerHeight-.5)*2;
+  },{passive:true});
+
+  // Scroll-based camera drift
+  let scrollY=0;
+  addEventListener('scroll',()=>{scrollY=window.scrollY;},{passive:true});
+
+  (function loop(){
+    requestAnimationFrame(loop);
+    t+=.01;
+
+    // Smooth camera tracking
+    cx+=(tx*1.6-cx)*.02;
+    cy+=(-ty*1.2-cy)*.02;
+    cm.position.x=cx;
+    cm.position.y=cy - scrollY*.002;
+    cm.lookAt(0,0 - scrollY*.001,0);
+
+    // Rotate forms
+    central.rotation.x+=central.userData.s.x;
+    central.rotation.y+=central.userData.s.y;
+    central.rotation.z+=central.userData.s.z;
+    central.material.opacity=.12+Math.sin(t*.7)*.03;
+
+    forms.forEach(m=>{
+      m.rotation.x+=m.userData.s.x;
+      m.rotation.y+=m.userData.s.y;
+      m.rotation.z+=m.userData.s.z;
+    });
+
+    r1.rotation.y+=.0025;
+    r1.rotation.z+=.0008;
+    r2.rotation.x+=.0018;
+    r2.rotation.z+=.0035;
+    r3.rotation.y+=.0012;
+    r3.rotation.x+=.0004;
+
+    // Particle gentle drift
+    points.rotation.y+=.0003;
+
+    // Ghost plane breathing
+    const plane=sc.userData.ghostPlane;
+    if(plane){
+      plane.rotation.z=Math.sin(t*.08)*.05;
+      plane.position.y=Math.sin(t*.12)*.6;
+      plane.material.opacity=.03+Math.sin(t*.25)*.012;
+    }
+
+    rr.render(sc,cm);
+  })();
+})();
+</script>
+</body>
+</html>
